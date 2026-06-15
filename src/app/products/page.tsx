@@ -134,7 +134,20 @@ export default function ProductsPage() {
             🏆 {winnerFilterActive ? "Winner-Filter aktiv" : "Winner-Filter"}
           </button>
           <button
-            onClick={() => fetch("/api/analysis", { method: "GET" })}
+            onClick={async () => {
+              const btn = document.activeElement as HTMLButtonElement;
+              if (btn) btn.disabled = true;
+              try {
+                const res = await fetch("/api/analysis?force=true", { method: "GET" });
+                const data = await res.json();
+                alert(`✅ ${data.message || "Analyse abgeschlossen"}`);
+                window.location.reload();
+              } catch {
+                alert("❌ Analyse fehlgeschlagen");
+              } finally {
+                if (btn) btn.disabled = false;
+              }
+            }}
             className="btn-secondary"
           >
             ⚡ Alle analysieren
