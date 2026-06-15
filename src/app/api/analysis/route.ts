@@ -3,6 +3,8 @@ import prisma from "@/lib/db";
 import { analyzeAndScoreProduct } from "@/lib/ai/analyzer";
 import type { Category, Market, DataSource } from "@prisma/client";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
