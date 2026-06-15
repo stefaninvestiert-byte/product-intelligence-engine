@@ -152,6 +152,7 @@ async function main() {
       create: {
         id: `seed-${product.name.toLowerCase().replace(/\s+/g, "-").slice(0, 30)}`,
         ...product,
+        targetMarkets: [...product.targetMarkets],
         margin,
         marginAbsolute,
         scalability: 70,
