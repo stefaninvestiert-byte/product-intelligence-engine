@@ -3,8 +3,6 @@ import prisma from "@/lib/db";
 import { analyzeAndScoreProduct } from "@/lib/ai/analyzer";
 import type { Category, Market, DataSource } from "@prisma/client";
 
-export const dynamic = "force-dynamic";
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -49,22 +47,32 @@ export async function POST(request: NextRequest) {
       scores: updated,
     });
   } catch (error) {
-    console.error("POST /api/analysis error:", error);
-    return NextResponse.json({ error: "Analyse fehlgeschlagen" }, { status: 500 });
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("POST /api/analysis error:", msg);
+    return NextResponse.json({ error: "Analyse fehlgeschlagen", detail: msg }, { status: 500 });
   }
 }
 
-// Bulk analyze all unscored products
+// Bulk analyze all unscored (or force-reanalyze all) products
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get("limit") ?? "10");
+    const limit = parseInt(searchParams.get("limit") ?? "50");
+    const force = searchParams.get("force") === "true";
 
     const unscored = await prisma.product.findMany({
       where: {
         isActive: true,
-        scores: null,
+        ...(force
+          ? {} // re-analyze ALL active products
+          : {
+              OR: [
+                { scores: null },
+                { scores: { problemSolvingScore: 0 } },
+              ],
+            }),
       },
+      include: { scores: true },
       take: limit,
     });
 
