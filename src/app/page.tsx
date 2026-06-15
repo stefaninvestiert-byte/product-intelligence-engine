@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import prisma from "@/lib/db";
 import StatsCard from "@/components/dashboard/StatsCard";
 import TopProducts from "@/components/dashboard/TopProducts";
