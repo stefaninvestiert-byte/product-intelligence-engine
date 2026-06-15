@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { runDailyScan } from "@/lib/scrapers";
 
+export const dynamic = "force-dynamic";
+
 // Called daily by Vercel Cron at 06:00 UTC
 // Configure in vercel.json: { "crons": [{ "path": "/api/cron/daily-scan", "schedule": "0 6 * * *" }] }
 export async function GET(request: Request) {
