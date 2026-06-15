@@ -2,6 +2,8 @@ import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
+  timeout: 120_000, // 120 seconds (default is 60s)
+  maxRetries: 1,
 });
 
 export async function analyzeProductWithClaude(input: {
