@@ -1,0 +1,353 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  name            String
+  nameEn          String?
+  description     String?
+  category        Category
+  subcategory     String?
+  imageUrl        String?
+  sourceUrl       String?
+  sourcePlatform  DataSource
+
+  // Pricing
+  buyPrice        Float    // Einkaufspreis in EUR
+  sellPrice       Float    // Verkaufspreis in EUR
+  shippingCost    Float    @default(0)
+  margin          Float    // Gewinnmarge in %
+  marginAbsolute  Float    // Gewinn in EUR
+
+  // Product Properties
+  weight          Float?   // in kg
+  returnRisk      ReturnRisk @default(MEDIUM)
+  seasonality     Seasonality @default(YEAR_ROUND)
+  scalability     Int      @default(50) // 0-100
+
+  // Market
+  targetMarkets   Market[]
+  isActive        Boolean  @default(true)
+  isFeatured      Boolean  @default(false)
+
+  // Relations
+  scores          ProductScore?
+  trends          ProductTrend[]
+  competitors     Competitor[]
+  alerts          Alert[]
+  recommendations Recommendation?
+  marketData      MarketData?
+
+  @@index([category])
+  @@index([margin])
+  @@index([createdAt])
+}
+
+model ProductScore {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  productId       String   @unique
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  // Main Scores (0-100)
+  winnerScore          Float    @default(0)
+  emotionalScore       Float    @default(0)
+  metaAdsScore         Float    @default(0)
+  googleAdsScore       Float    @default(0)
+  conversionScore      Float    @default(0)
+
+  // New Composite Scores (0-100)
+  problemSolvingScore  Float    @default(0)  // 35% of winnerScore
+  competitionScore     Float    @default(0)  // 25% of winnerScore
+  demandScore          Float    @default(0)  // 25% of winnerScore
+  profitScore          Float    @default(0)  // 15% of winnerScore
+
+  // Emotional Sub-Scores
+  painRelief      Float    @default(0)
+  shame           Float    @default(0)
+  anxiety         Float    @default(0)
+  comfort         Float    @default(0)
+  attractiveness  Float    @default(0)
+  timeSaving      Float    @default(0)
+  selfConfidence  Float    @default(0)
+  health          Float    @default(0)
+
+  // Meta Ads Sub-Scores
+  ugcPotential    Float    @default(0)
+  hookPotential   Float    @default(0)
+  scrollStopper   Float    @default(0)
+  creativePotential Float  @default(0)
+  beforeAfterRisk Float    @default(0)
+  complianceRisk  Float    @default(0)
+
+  // Google Ads Sub-Scores
+  searchIntent    Float    @default(0)
+  keywordPotential Float   @default(0)
+  buyingIntent    Float    @default(0)
+  cpcRisk         Float    @default(0)
+  competitionLevel Float   @default(0)
+
+  // Conversion Sub-Scores
+  problemAwareness Float   @default(0)
+  solutionClarity Float    @default(0)
+  trustPotential  Float    @default(0)
+  storytelling    Float    @default(0)
+  upsellPotential Float    @default(0)
+  bundlePotential Float    @default(0)
+
+  scoreHistory    ScoreHistory[]
+
+  @@index([winnerScore])
+  @@index([emotionalScore])
+}
+
+model ScoreHistory {
+  id              String   @id @default(cuid())
+  date            DateTime @default(now())
+  scoreId         String
+  score           ProductScore @relation(fields: [scoreId], references: [id], onDelete: Cascade)
+  winnerScore     Float
+  emotionalScore  Float
+  metaAdsScore    Float
+  googleAdsScore  Float
+  conversionScore Float
+}
+
+model ProductTrend {
+  id              String   @id @default(cuid())
+  date            DateTime @default(now())
+  productId       String
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  searchVolume    Int      @default(0)
+  trendScore      Float    @default(0)
+  direction       TrendDirection @default(STABLE)
+  percentChange   Float    @default(0)
+  market          Market
+  source          DataSource
+
+  @@index([productId, date])
+  @@index([date])
+}
+
+model Competitor {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  productId       String
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  shopName        String
+  shopUrl         String?
+  price           Float
+  currency        String   @default("EUR")
+  adCount         Int      @default(0)
+  firstAdSeen     DateTime?
+  lastAdSeen      DateTime?
+  estimatedAdSpend Float?
+  market          Market
+  hooks           String[]
+  creativeUrls    String[]
+
+  @@index([productId])
+}
+
+model Alert {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  triggeredAt     DateTime @default(now())
+  readAt          DateTime?
+
+  productId       String?
+  product         Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  type            AlertType
+  severity        AlertSeverity @default(INFO)
+  title           String
+  message         String
+  data            Json?
+  isRead          Boolean  @default(false)
+
+  @@index([isRead])
+  @@index([triggeredAt])
+}
+
+model Recommendation {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  productId       String   @unique
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  // Target Audience
+  targetAudience  String
+  avatar          String
+  demographics    String?
+  psychographics  String?
+
+  // Ad Strategy
+  buyingMotives   String[]
+  adAngles        String[]
+  hooks           String[]
+  headlines       String[]
+
+  // Offers
+  offerIdeas      String[]
+  bundleIdeas     String[]
+  upsellIdeas     String[]
+
+  // Ad Copy
+  primaryText     String?
+  adCopy          Json?
+
+  // Emotional Triggers
+  emotionalTriggers String[]
+
+  generatedBy     String   @default("claude")
+}
+
+model MarketData {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  productId       String   @unique
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  marketSize      String?
+  marketSizeEur   Float?
+  searchVolumeDe  Int      @default(0)
+  searchVolumeAt  Int      @default(0)
+  searchVolumeNl  Int      @default(0)
+  searchVolumeSe  Int      @default(0)
+  avgCpc          Float?
+  competitionLevel CompetitionLevel @default(MEDIUM)
+  topKeywords     String[]
+  relatedKeywords String[]
+}
+
+model ScanLog {
+  id              String   @id @default(cuid())
+  startedAt       DateTime @default(now())
+  completedAt     DateTime?
+  source          DataSource
+  status          ScanStatus @default(RUNNING)
+  productsFound   Int      @default(0)
+  productsNew     Int      @default(0)
+  errors          String[]
+  duration        Int?     // in seconds
+}
+
+// Enums
+
+enum Category {
+  HEALTH
+  PAIN_RELIEF
+  SLEEP
+  COMFORT
+  WELLNESS
+  ANTI_SNORING
+  BACK_NECK
+  JOINTS_MOBILITY
+  BEAUTY
+  SKINCARE
+  HAIR_REMOVAL
+  WOMENS_PRODUCTS
+  PET_PRODUCTS
+  FASHION
+  ELECTRONICS
+  TOYS
+  OTHER
+}
+
+enum Market {
+  DE
+  AT
+  NL
+  SE
+}
+
+enum DataSource {
+  FACEBOOK_ADS
+  TIKTOK
+  GOOGLE_TRENDS
+  AMAZON
+  ETSY
+  REDDIT
+  PINTEREST
+  ALIEXPRESS
+  CJ_DROPSHIPPING
+  TEMU
+  TRUSTPILOT
+  SIMILARWEB
+  MANUAL
+}
+
+enum ReturnRisk {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum Seasonality {
+  YEAR_ROUND
+  SPRING
+  SUMMER
+  AUTUMN
+  WINTER
+  Q1
+  Q2
+  Q3
+  Q4
+}
+
+enum TrendDirection {
+  RISING
+  STABLE
+  FALLING
+  SPIKE
+}
+
+enum AlertType {
+  WINNER_SCORE_HIGH
+  TREND_SPIKE
+  SEARCH_VOLUME_SURGE
+  AD_SCALING
+  NEW_COMPETITOR
+  PRICE_DROP
+  SYSTEM
+}
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  HIGH
+  CRITICAL
+}
+
+enum CompetitionLevel {
+  LOW
+  MEDIUM
+  HIGH
+  VERY_HIGH
+}
+
+enum ScanStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+  PARTIAL
+}
