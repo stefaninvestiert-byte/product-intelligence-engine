@@ -117,7 +117,7 @@ export async function GET() {
       prisma.product.aggregate({
         where: { isActive: true },
         _avg: { margin: true, marginAbsolute: true },
-        _max: { margin: true, winnerScore: undefined },
+        _max: { margin: true },
       }),
 
       // Last scan log
