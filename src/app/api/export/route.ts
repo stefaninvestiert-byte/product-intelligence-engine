@@ -3,6 +3,8 @@ import prisma from "@/lib/db";
 import ExcelJS from "exceljs";
 import { CATEGORY_LABELS } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
